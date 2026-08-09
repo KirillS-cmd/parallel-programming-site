@@ -35,19 +35,23 @@ export async function addStudent(teacherId, classId, fullName) {
   const q = query(collection(db, 'users'), where('teacherId', '==', teacherId), where('name', '==', fullName));
   const snap = await getDocs(q);
   let studentId;
+  let login, password;
   if (!snap.empty) {
-    // Уже существует, проверим, не состоит ли в этом классе
     const existingUser = snap.docs[0];
     studentId = existingUser.id;
+    // Проверим, не состоит ли в этом классе
     const classCheck = query(collection(db, 'studentClasses'), where('studentId', '==', studentId), where('classId', '==', classId));
     const classSnap = await getDocs(classCheck);
     if (!classSnap.empty) {
       return { success: false, error: 'Ученик уже в этом классе' };
     }
+    // Генерируем новые логин/пароль для этого класса
+    login = generateLogin(fullName);
+    password = generatePassword(8);
   } else {
     // Создаём нового пользователя
-    const login = generateLogin(fullName);
-    const password = generatePassword(8);
+    login = generateLogin(fullName);
+    password = generatePassword(8);
     const email = `${login}@temp.local`;
     try {
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -63,12 +67,11 @@ export async function addStudent(teacherId, classId, fullName) {
         phone: ''
       });
     } catch (err) {
+      console.error('Ошибка создания ученика:', err);
       return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
     }
   }
-  // Создаём запись studentClasses
-  const login = generateLogin(fullName);
-  const password = generatePassword(8);
+  // Добавляем связь в studentClasses
   await addDoc(collection(db, 'studentClasses'), {
     studentId,
     classId,

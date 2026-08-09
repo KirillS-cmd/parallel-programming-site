@@ -13,13 +13,19 @@ export async function loginTeacher(email, password) {
     const userCred = await signInWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
     const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists() && userDoc.data().role === 'teacher') {
+    if (!userDoc.exists()) {
+      await signOut(auth);
+      return { success: false, error: 'Пользователь не найден в базе данных. Обратитесь к администратору.' };
+    }
+    const userData = userDoc.data();
+    if (userData.role === 'teacher') {
       return { success: true };
     } else {
       await signOut(auth);
-      return { success: false, error: 'У вас нет прав педагога' };
+      return { success: false, error: 'У вас нет прав педагога. Ваша роль: ' + userData.role };
     }
   } catch (error) {
+    console.error('Ошибка входа:', error);
     return { success: false, error: error.message };
   }
 }
@@ -27,50 +33,56 @@ export async function loginTeacher(email, password) {
 // ------------------ Регистрация педагога ------------------
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
+    // 1. Создаём пользователя в Firebase Auth
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
+    
+    // 2. Сохраняем данные в Firestore
     await setDoc(doc(db, 'users', uid), {
-      email,
+      email: email,
       role: 'teacher',
-      name,
-      city,
-      school,
-      phone,
+      name: name,
+      city: city,
+      school: school,
+      phone: phone,
       isConfirmed: true,
-      teacherId: null
+      teacherId: null,
+      createdAt: new Date().toISOString()
     });
+    
+    console.log('Регистрация успешна, пользователь создан:', uid);
     return { success: true };
   } catch (error) {
+    console.error('Ошибка регистрации:', error);
     return { success: false, error: error.message };
   }
 }
 
 // ------------------ Вход ученика (по логину/паролю) ------------------
 export async function loginStudent(login, password) {
-  // Находим запись в studentClasses
-  const q = query(collection(db, 'studentClasses'), where('login', '==', login));
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    return { success: false, error: 'Неверный логин' };
-  }
-  const data = snapshot.docs[0].data();
-  if (data.password !== password) {
-    return { success: false, error: 'Неверный пароль' };
-  }
-  const studentId = data.studentId;
-  const userDoc = await getDoc(doc(db, 'users', studentId));
-  if (!userDoc.exists()) {
-    return { success: false, error: 'Пользователь не найден' };
-  }
-  // Входим через Firebase Auth (используем email, который хранится в users)
-  const email = userDoc.data().email;
-  // Пароль мы сохранили при создании ученика – он используется для входа
-  // Значит, при создании ученика мы создаём пользователя с этим паролем.
   try {
+    // Ищем запись studentClasses с таким логином
+    const q = query(collection(db, 'studentClasses'), where('login', '==', login));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      return { success: false, error: 'Неверный логин' };
+    }
+    const data = snapshot.docs[0].data();
+    if (data.password !== password) {
+      return { success: false, error: 'Неверный пароль' };
+    }
+    const studentId = data.studentId;
+    const userDoc = await getDoc(doc(db, 'users', studentId));
+    if (!userDoc.exists()) {
+      return { success: false, error: 'Учётная запись ученика не найдена' };
+    }
+    const email = userDoc.data().email;
+    // Входим через Firebase Auth
     await signInWithEmailAndPassword(auth, email, password);
     return { success: true };
   } catch (error) {
-    return { success: false, error: 'Ошибка входа: ' + error.message };
+    console.error('Ошибка входа ученика:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -83,11 +95,18 @@ export async function logout() {
 export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        callback({ user, role: userData.role, userData });
-      } else {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          callback({ user, role: userData.role, userData });
+        } else {
+          // Если документа нет, выходим
+          await signOut(auth);
+          callback(null);
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки данных пользователя:', err);
         callback(null);
       }
     } else {
@@ -96,7 +115,7 @@ export function onAuthStateChangedListener(callback) {
   });
 }
 
-// ------------------ Получить текущего пользователя с ролью (для проверок) ------------------
+// ------------------ Получить текущего пользователя с ролью ------------------
 export async function getCurrentUserWithRole() {
   const user = auth.currentUser;
   if (!user) return null;
