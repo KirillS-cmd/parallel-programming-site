@@ -8,22 +8,19 @@ import { auth } from './firebase-config.js';
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 export async function createClass(teacherId, className) {
-  const docRef = await addDoc(collection(db, 'classes'), {
-    name: className, teacherId, createdAt: new Date().toISOString()
-  });
-  return docRef.id;
+  const ref = await addDoc(collection(db, 'classes'), { name: className, teacherId, createdAt: new Date().toISOString() });
+  return ref.id;
 }
 
 export async function getClasses(teacherId) {
   const q = query(collection(db, 'classes'), where('teacherId', '==', teacherId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function getClass(classId) {
   const docSnap = await getDoc(doc(db, 'classes', classId));
-  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
-  return null;
+  return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 }
 
 export async function addStudent(teacherId, classId, fullName) {
@@ -31,11 +28,9 @@ export async function addStudent(teacherId, classId, fullName) {
   const snap = await getDocs(q);
   let studentId, login, password;
   if (!snap.empty) {
-    const existingUser = snap.docs[0];
-    studentId = existingUser.id;
-    const classCheck = query(collection(db, 'studentClasses'), where('studentId', '==', studentId), where('classId', '==', classId));
-    const classSnap = await getDocs(classCheck);
-    if (!classSnap.empty) return { success: false, error: 'Ученик уже в этом классе' };
+    studentId = snap.docs[0].id;
+    const check = query(collection(db, 'studentClasses'), where('studentId', '==', studentId), where('classId', '==', classId));
+    if (!(await getDocs(check)).empty) return { success: false, error: 'Ученик уже в этом классе' };
     login = generateLogin(fullName);
     password = generatePassword(8);
   } else {
@@ -43,20 +38,17 @@ export async function addStudent(teacherId, classId, fullName) {
     password = generatePassword(8);
     const email = `${login}@temp.local`;
     try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      studentId = userCred.user.uid;
+      const uc = await createUserWithEmailAndPassword(auth, email, password);
+      studentId = uc.user.uid;
       await setDoc(doc(db, 'users', studentId), {
         email, role: 'student', name: fullName, teacherId, isConfirmed: true,
         city: '', school: '', phone: ''
       });
     } catch (err) {
-      console.error('Ошибка создания ученика:', err);
-      return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
+      return { success: false, error: err.message };
     }
   }
-  await addDoc(collection(db, 'studentClasses'), {
-    studentId, classId, login, password, createdAt: new Date().toISOString()
-  });
+  await addDoc(collection(db, 'studentClasses'), { studentId, classId, login, password, createdAt: new Date().toISOString() });
   return { success: true, login, password };
 }
 
@@ -66,33 +58,26 @@ export async function getStudentsWithProgress(classId) {
   const students = [];
   for (const docSnap of snap.docs) {
     const data = docSnap.data();
-    const studentId = data.studentId;
-    const userDoc = await getDoc(doc(db, 'users', studentId));
+    const userDoc = await getDoc(doc(db, 'users', data.studentId));
     if (!userDoc.exists()) continue;
     const userData = userDoc.data();
-    const progressQ = query(collection(db, 'progress'), where('studentId', '==', studentId));
-    const progressSnap = await getDocs(progressQ);
-    const progressMap = {};
-    progressSnap.docs.forEach(p => {
-      const pData = p.data();
-      progressMap[`${pData.section}_${pData.itemId}`] = pData;
-    });
+    const progQ = query(collection(db, 'progress'), where('studentId', '==', data.studentId));
+    const progSnap = await getDocs(progQ);
+    const progMap = {};
+    progSnap.docs.forEach(p => { const pd = p.data(); progMap[`${pd.section}_${pd.itemId}`] = pd; });
     let practiceDone = 0;
-    for (let i = 1; i <= 5; i++) {
-      if (progressMap[`practice_task${i}`]?.completed) practiceDone++;
-    }
+    for (let i = 1; i <= 5; i++) if (progMap[`practice_task${i}`]?.completed) practiceDone++;
     const practicePercent = Math.round((practiceDone / 5) * 100);
-    const codeProgress = progressMap['practice_task5'];
-    const codeExists = codeProgress && codeProgress.answer && codeProgress.answer.length > 0;
+    const codeExists = progMap['practice_task5']?.answer ? true : false;
     students.push({
-      id: studentId,
+      id: data.studentId,
       name: userData.name,
       login: data.login,
       password: data.password,
       practicePercent,
       codeExists,
       studentClassId: docSnap.id,
-      progress: progressMap
+      progress: progMap
     });
   }
   return students;
@@ -106,16 +91,9 @@ export async function markProgress(studentId, section, itemId, completed = true,
   const q = query(collection(db, 'progress'), where('studentId', '==', studentId), where('section', '==', section), where('itemId', '==', itemId));
   const snap = await getDocs(q);
   if (snap.empty) {
-    await addDoc(collection(db, 'progress'), {
-      studentId, section, itemId, completed,
-      score: extra.score || 0,
-      answer: extra.answer || null,
-      checkedByTeacher: extra.checkedByTeacher || false,
-      timestamp: new Date().toISOString()
-    });
+    await addDoc(collection(db, 'progress'), { studentId, section, itemId, completed, ...extra, timestamp: new Date().toISOString() });
   } else {
-    const ref = snap.docs[0].ref;
-    await updateDoc(ref, { completed, ...extra });
+    await updateDoc(snap.docs[0].ref, { completed, ...extra });
   }
 }
 
@@ -123,31 +101,23 @@ export async function getProgress(studentId) {
   const q = query(collection(db, 'progress'), where('studentId', '==', studentId));
   const snap = await getDocs(q);
   const result = {};
-  snap.docs.forEach(doc => {
-    const data = doc.data();
-    result[`${data.section}_${data.itemId}`] = data;
-  });
+  snap.docs.forEach(d => { const data = d.data(); result[`${data.section}_${data.itemId}`] = data; });
   return result;
 }
 
 export async function getStudentCode(studentId) {
   const q = query(collection(db, 'progress'), where('studentId', '==', studentId), where('section', '==', 'practice'), where('itemId', '==', 'task5'));
   const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return snap.docs[0].data();
+  return snap.empty ? null : snap.docs[0].data();
 }
 
 export async function markCodeChecked(studentId) {
   const q = query(collection(db, 'progress'), where('studentId', '==', studentId), where('section', '==', 'practice'), where('itemId', '==', 'task5'));
   const snap = await getDocs(q);
-  if (!snap.empty) {
-    const ref = snap.docs[0].ref;
-    await updateDoc(ref, { completed: true, checkedByTeacher: true });
-  }
+  if (!snap.empty) await updateDoc(snap.docs[0].ref, { completed: true, checkedByTeacher: true });
 }
 
 export async function getUser(userId) {
   const docSnap = await getDoc(doc(db, 'users', userId));
-  if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
-  return null;
+  return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
 }

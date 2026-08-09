@@ -1,3 +1,4 @@
+{% raw %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -25,8 +26,8 @@
     </div>
 
     <div class="d-flex flex-wrap gap-2 mb-4">
-      <a href="add_student.html?classId=" id="addStudentLink" class="btn btn-success"><i class="fas fa-user-plus"></i> Добавить ученика</a>
-      <a href="import_students.html?classId=" id="importLink" class="btn btn-info text-white"><i class="fas fa-file-import"></i> Импорт из Excel/CSV</a>
+      <a href="#" id="addStudentLink" class="btn btn-success"><i class="fas fa-user-plus"></i> Добавить ученика</a>
+      <a href="#" id="importLink" class="btn btn-info text-white"><i class="fas fa-file-import"></i> Импорт из Excel/CSV</a>
       <button id="exportBtn" class="btn btn-secondary"><i class="fas fa-file-excel"></i> Скачать результаты (Excel)</button>
       <a href="teacher_dashboard.html" class="btn btn-outline-primary"><i class="fas fa-arrow-left"></i> Назад</a>
     </div>
@@ -53,8 +54,8 @@
   <script type="module">
     import { onAuthStateChangedListener, logout } from './static/js/auth.js';
     import { getClass, getStudentsWithProgress, removeStudentFromClass } from './static/js/db.js';
-    import { doc, deleteDoc } from 'firebase/firestore';
     import { db } from './static/js/firebase-config.js';
+    import { doc, deleteDoc } from 'firebase/firestore';
 
     const urlParams = new URLSearchParams(window.location.search);
     const classId = urlParams.get('id');
@@ -116,15 +117,13 @@
         document.querySelectorAll('.remove-student').forEach(btn => {
           btn.addEventListener('click', async () => {
             if (confirm(`Удалить ученика ${btn.dataset.name}?`)) {
-              const scId = btn.dataset.studentClassId;
-              await removeStudentFromClass(scId);
+              await removeStudentFromClass(btn.dataset.studentClassId);
               location.reload();
             }
           });
         });
       }
 
-      // Экспорт в Excel
       document.getElementById('exportBtn').addEventListener('click', () => {
         const data = students.map(s => ({
           'ФИО': s.name,
@@ -141,3 +140,4 @@
   </script>
 </body>
 </html>
+{% endraw %}

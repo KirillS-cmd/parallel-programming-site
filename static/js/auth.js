@@ -14,17 +14,12 @@ export async function loginTeacher(email, password) {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) {
       await signOut(auth);
-      return { success: false, error: 'Пользователь не найден в базе данных.' };
+      return { success: false, error: 'Пользователь не найден в БД' };
     }
-    const userData = userDoc.data();
-    if (userData.role === 'teacher') {
-      return { success: true };
-    } else {
-      await signOut(auth);
-      return { success: false, error: 'У вас нет прав педагога.' };
-    }
+    return userDoc.data().role === 'teacher' 
+      ? { success: true } 
+      : (await signOut(auth), { success: false, error: 'Нет прав педагога' });
   } catch (error) {
-    console.error('Ошибка входа:', error);
     return { success: false, error: error.message };
   }
 }
@@ -32,15 +27,12 @@ export async function loginTeacher(email, password) {
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const uid = userCred.user.uid;
-    await setDoc(doc(db, 'users', uid), {
+    await setDoc(doc(db, 'users', userCred.user.uid), {
       email, role: 'teacher', name, city, school, phone,
       isConfirmed: true, teacherId: null, createdAt: new Date().toISOString()
     });
-    console.log('Регистрация успешна, пользователь создан:', uid);
     return { success: true };
   } catch (error) {
-    console.error('Ошибка регистрации:', error);
     return { success: false, error: error.message };
   }
 }
@@ -48,42 +40,27 @@ export async function registerTeacher(email, password, name, city, school, phone
 export async function loginStudent(login, password) {
   try {
     const q = query(collection(db, 'studentClasses'), where('login', '==', login));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return { success: false, error: 'Неверный логин' };
-    const data = snapshot.docs[0].data();
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: false, error: 'Неверный логин' };
+    const data = snap.docs[0].data();
     if (data.password !== password) return { success: false, error: 'Неверный пароль' };
-    const studentId = data.studentId;
-    const userDoc = await getDoc(doc(db, 'users', studentId));
-    if (!userDoc.exists()) return { success: false, error: 'Учётная запись ученика не найдена' };
+    const userDoc = await getDoc(doc(db, 'users', data.studentId));
+    if (!userDoc.exists()) return { success: false, error: 'Ученик не найден' };
     await signInWithEmailAndPassword(auth, userDoc.data().email, password);
     return { success: true };
   } catch (error) {
-    console.error('Ошибка входа ученика:', error);
     return { success: false, error: error.message };
   }
 }
 
-export async function logout() {
-  await signOut(auth);
-}
+export async function logout() { await signOut(auth); }
 
 export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          callback({ user, role: userDoc.data().role, userData: userDoc.data() });
-        } else {
-          await signOut(auth);
-          callback(null);
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки данных пользователя:', err);
-        callback(null);
-      }
-    } else {
-      callback(null);
-    }
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) callback({ user, role: docSnap.data().role, userData: docSnap.data() });
+      else { await signOut(auth); callback(null); }
+    } else callback(null);
   });
 }

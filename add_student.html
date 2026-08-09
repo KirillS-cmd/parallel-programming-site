@@ -1,3 +1,4 @@
+{% raw %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -37,11 +38,12 @@
     import { onAuthStateChangedListener } from './static/js/auth.js';
     import { addStudent } from './static/js/db.js';
     import { auth } from './static/js/firebase-config.js';
+
     const urlParams = new URLSearchParams(window.location.search);
     const classId = urlParams.get('classId');
     if (!classId) {
-      alert('Ошибка: не указан класс');
-      window.location.href = 'teacher_dashboard.html';
+      document.getElementById('resultInfo').innerHTML = '<div class="alert alert-danger">Ошибка: не указан класс</div>';
+      document.getElementById('addForm').style.display = 'none';
     }
     document.getElementById('backLink').href = `class_detail.html?id=${classId}`;
 
@@ -67,3 +69,4 @@
   </script>
 </body>
 </html>
+{% endraw %}
