@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Параллельное программирование</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-code"></i> Параллельное программирование</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto" id="navLinks">
+          <!-- JS заполнит -->
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-4">
+    <div class="row justify-content-center mt-4">
+      <div class="col-md-8 text-center">
+        <h1 class="display-4 fw-bold text-primary"><i class="fas fa-rocket"></i> Добро пожаловать!</h1>
+        <p class="lead">Выберите вашу роль для входа в систему</p>
+      </div>
+    </div>
+    <div class="row justify-content-center mt-4 g-4">
+      <div class="col-md-3">
+        <div class="card h-100 shadow-lg border-0 text-center hover-card">
+          <div class="card-body d-flex flex-column">
+            <i class="fas fa-chalkboard-teacher fa-4x text-primary mb-3"></i>
+            <h5 class="card-title">Педагог</h5>
+            <p class="card-text text-muted small">Вход / Регистрация</p>
+            <a href="teacher_login.html" class="btn btn-primary btn-lg index-btn mt-auto">Войти</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100 shadow-lg border-0 text-center hover-card">
+          <div class="card-body d-flex flex-column">
+            <i class="fas fa-user-graduate fa-4x text-info mb-3"></i>
+            <h5 class="card-title">Обучающийся</h5>
+            <p class="card-text text-muted small">Введите логин и пароль</p>
+            <a href="student_login.html" class="btn btn-info btn-lg index-btn mt-auto text-white">Войти</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card h-100 shadow-lg border-0 text-center hover-card">
+          <div class="card-body d-flex flex-column">
+            <i class="fas fa-unlock fa-4x text-secondary mb-3"></i>
+            <h5 class="card-title">Свободный доступ</h5>
+            <p class="card-text text-muted small">Изучайте без регистрации</p>
+            <a href="free_access.html" class="btn btn-outline-secondary btn-lg index-btn mt-auto">Перейти</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer mt-auto py-3 bg-light text-center">
+    <div class="container">
+      <span class="text-muted">Параллельное программирование</span>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { onAuthStateChangedListener, logout } from './static/js/auth.js';
+    const nav = document.getElementById('navLinks');
+    onAuthStateChangedListener((userData) => {
+      if (userData) {
+        const { role } = userData;
+        let html = '';
+        if (role === 'teacher') {
+          html += `<li class="nav-item"><a class="nav-link" href="teacher_dashboard.html"><i class="fas fa-chalkboard"></i> Кабинет</a></li>`;
+        } else if (role === 'student') {
+          html += `<li class="nav-item"><a class="nav-link" href="student_dashboard.html"><i class="fas fa-user-graduate"></i> Кабинет</a></li>`;
+          html += `<li class="nav-item"><a class="nav-link" href="theory.html"><i class="fas fa-book-open"></i> Теория</a></li>`;
+          html += `<li class="nav-item"><a class="nav-link" href="practice.html"><i class="fas fa-tasks"></i> Практика</a></li>`;
+        }
+        html += `<li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
+        nav.innerHTML = html;
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+          e.preventDefault();
+          await logout();
+          window.location.href = 'index.html';
+        });
+      } else {
+        nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                         <li class="nav-item"><a class="nav-link" href="support.html"><i class="fas fa-headset"></i> Поддержка</a></li>`;
+      }
+    });
+  </script>
+</body>
+</html>

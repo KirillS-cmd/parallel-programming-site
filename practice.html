@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Практика</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="static/style.css">
+  <style>
+    .drag-list { list-style: none; padding: 0; margin: 15px 0; background: #f8f9fa; border-radius: 8px; min-height: 60px; }
+    .drag-list li { padding: 10px 15px; margin: 5px 8px; background: white; border: 1px solid #dee2e6; border-radius: 6px; cursor: grab; font-family: 'Courier New', monospace; font-size: 0.9rem; }
+    .drag-list li.sortable-chosen { background: #cfe2ff; border-color: #0d6efd; }
+    .code-textarea { width: 100%; min-height: 200px; font-family: 'Courier New', monospace; font-size: 0.95rem; padding: 10px; border: 2px solid #ced4da; border-radius: 8px; background: #f8f9fa; }
+    .task-card { background: white; border-radius: 16px; padding: 20px 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid #0d6efd; }
+    .task-card h4 { color: #0d6efd; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-code"></i> Параллельное программирование</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto" id="navLinks"></ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container my-4">
+    <h2 class="mb-3"><i class="fas fa-tasks text-success"></i> Практика</h2>
+    <p class="text-muted">Выполняйте задания по порядку. После правильного ответа автоматически перейдёте к следующему.</p>
+
+    <!-- Контейнер для динамического рендеринга заданий -->
+    <div id="practiceContainer"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script type="module">
+    import { onAuthStateChangedListener, logout } from './static/js/auth.js';
+    import { getProgress, markProgress } from './static/js/db.js';
+    import { getPracticeStatus } from './static/js/practice.js';
+
+    // Данные для заданий
+    const questions = [
+      { id: 'task1', question: 'Что такое GIL в Python?', options: ['A) Глобальный интерпретатор, управляющий памятью.', 'B) Механизм параллельного выполнения на разных ядрах.', 'C) Блокировка, позволяющая только одному потоку выполнять Python-код.', 'D) Ускоритель выполнения кода.'], correct: 'C' },
+      { id: 'task2', question: 'Для каких задач в Python лучше всего использовать потоки (threading)?', options: ['A) Для вычислительных задач.', 'B) Для задач ввода-вывода (сеть, файлы).', 'C) Для умножения матриц.', 'D) Для любых задач.'], correct: 'B' }
+    ];
+
+    const correctOrders = {
+      task3: [
+        'with open("text.txt", "r", encoding="utf-8") as f:',
+        '    lines = f.readlines()',
+        'total_lines = len(lines)',
+        'def count_sequential():',
+        '    return len(lines)',
+        'def count_chunk(chunk, result, lock):',
+        '    cnt = len(chunk)',
+        '    with lock:',
+        '        result[0] += cnt',
+        'num_threads = 4',
+        'chunk_size = len(lines) // num_threads',
+        'chunks = []',
+        'for i in range(num_threads):',
+        '    start = i * chunk_size',
+        '    end = start + chunk_size if i != num_threads - 1 else len(lines)',
+        '    chunks.append(lines[start:end])',
+        'total_count = [0]',
+        'lock = threading.Lock()',
+        'threads = []',
+        'for chunk in chunks:',
+        '    t = threading.Thread(target=count_chunk, args=(chunk, total_count, lock))',
+        '    threads.append(t)',
+        '    t.start()',
+        'for t in threads:',
+        '    t.join()',
+        'print("Последовательный подсчёт:", count_sequential())',
+        'print("Параллельный подсчёт (потоки):", total_count[0])'
+      ],
+      task4: [
+        'files = [',
+        '    ("video.mp4", 3),',
+        '    ("music.mp3", 2),',
+        '    ("photo.jpg", 1),',
+        '    ("document.pdf", 4),',
+        '    ("archive.zip", 5),',
+        ']',
+        'def download_file(name, size):',
+        '    print(f"Начинаю загрузку: {name} ({size} МБ)")',
+        '    time.sleep(size)',
+        '    print(f"Загрузка завершена: {name}")',
+        'print("=== ПОСЛЕДОВАТЕЛЬНАЯ ЗАГРУЗКА ===")',
+        'start = time.time()',
+        'for name, size in files:',
+        '    download_file(name, size)',
+        'end = time.time()',
+        'print(f"Общее время: {end - start:.2f} секунд\\n")',
+        'print("=== ПАРАЛЛЕЛЬНАЯ ЗАГРУЗКА ===")',
+        'start = time.time()',
+        'threads = []',
+        'for name, size in files:',
+        '    t = threading.Thread(target=download_file, args=(name, size))',
+        '    threads.append(t)',
+        '    t.start()',
+        'for t in threads:',
+        '    t.join()',
+        'end = time.time()',
+        'print(f"Общее время: {end - start:.2f} секунд")'
+      ]
+    };
+
+    // Функция перемешивания массива
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Рендеринг текущего задания
+    function renderPractice(studentId, status, progressMap) {
+      const container = document.getElementById('practiceContainer');
+      const { completed, current, allDone } = status;
+
+      if (allDone) {
+        container.innerHTML = `
+          <div class="text-center mt-5">
+            <h2><i class="fas fa-check-circle text-success"></i> Практика завершена!</h2>
+            <p>Вы успешно выполнили все задания. Отличная работа!</p>
+            <a href="student_dashboard.html" class="btn btn-primary mt-3">Вернуться в кабинет</a>
+          </div>
+        `;
+        return;
+      }
+
+      // Определяем текущее задание
+      const taskId = current;
+      const taskIndex = ['task1','task2','task3','task4','task5'].indexOf(taskId) + 1;
+      const totalTasks = 5;
+      let html = `
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:25px;">
+          <span class="badge bg-primary rounded-pill" style="font-size:1rem; padding:8px 16px;">${taskIndex} / ${totalTasks}</span>
+          <span class="text-muted">Задание ${taskIndex} из ${totalTasks}</span>
+          <div style="flex-grow:1; height:8px; background:#e9ecef; border-radius:4px;">
+            <div style="width: ${((taskIndex-1)/totalTasks*100)|0}%; height:100%; background:#198754; border-radius:4px;"></div>
+          </div>
+        </div>
+      `;
+
+      // Генерируем содержимое в зависимости от taskId
+      if (taskId === 'task1' || taskId === 'task2') {
+        const q = questions.find(q => q.id === taskId);
+        html += `
+          <div class="task-card">
+            <h4>Задание ${taskIndex} <span class="badge bg-primary">Вопрос</span></h4>
+            <p><strong>${q.question}</strong></p>
+            <form id="questionForm">
+              <input type="hidden" name="taskId" value="${taskId}">
+              <div class="mb-3">
+                ${q.options.map((opt, idx) => `
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="answer" id="q${taskId}_${idx}" value="${String.fromCharCode(65+idx)}">
+                    <label class="form-check-label" for="q${taskId}_${idx}">${opt}</label>
+                  </div>
+                `).join('')}
+              </div>
+              <button type="submit" class="btn btn-primary">Ответить</button>
+            </form>
+            <div id="questionResult" class="mt-2"></div>
+          </div>
+        `;
+      } else if (taskId === 'task3' || taskId === 'task4') {
+        const lines = shuffle(correctOrders[taskId]);
+        html += `
+          <div class="task-card">
+            <h4>Задание ${taskIndex} <span class="badge bg-warning text-dark">Перетаскивание</span></h4>
+            <p>Расставьте строки кода в правильном порядке (сверху вниз).</p>
+            <ul id="dragList" class="drag-list">
+              ${lines.map(line => `<li>${line}</li>`).join('')}
+            </ul>
+            <form id="dragForm">
+              <input type="hidden" name="taskId" value="${taskId}">
+              <div id="orderInputs"></div>
+              <button type="submit" class="btn btn-primary">Проверить порядок</button>
+            </form>
+            <div id="dragResult" class="mt-2"></div>
+          </div>
+        `;
+        // После рендеринга инициализируем Sortable
+        setTimeout(() => {
+          const list = document.getElementById('dragList');
+          if (list) {
+            new Sortable(list, { animation: 150, ghostClass: 'sortable-chosen' });
+          }
+        }, 100);
+      } else if (taskId === 'task5') {
+        const codeSubmitted = progressMap[`practice_task5`]?.answer ? true : false;
+        html += `
+          <div class="task-card">
+            <h4>Задание 5 <span class="badge bg-danger">★</span></h4>
+            <p><strong>Задача:</strong> Создайте файл с баллами (каждая строка — оценка), наполните рандомными цифрами от 0 до 100, выведите среднее.</p>
+            <p>Напишите код на Python и отправьте на проверку педагогу.</p>
+            ${codeSubmitted ? `
+              <div class="alert alert-info"><i class="fas fa-info-circle"></i> Ваш код отправлен на проверку. Дождитесь оценки педагога.</div>
+              <a href="student_dashboard.html" class="btn btn-success">Завершить практику</a>
+            ` : `
+              <form id="codeForm">
+                <textarea name="code" class="code-textarea" placeholder="Введите ваш код здесь..."></textarea>
+                <div class="mt-2">
+                  <button type="submit" class="btn btn-primary">Отправить на проверку</button>
+                  <a href="student_dashboard.html" class="btn btn-secondary" style="margin-left:10px;">Пропустить</a>
+                </div>
+              </form>
+              <div id="codeResult" class="mt-2"></div>
+            `}
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+
+      // Привязываем события после рендеринга
+      if (taskId === 'task1' || taskId === 'task2') {
+        document.getElementById('questionForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const taskId = form.querySelector('[name="taskId"]').value;
+          const answer = form.querySelector('[name="answer"]:checked');
+          if (!answer) {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-warning">Выберите вариант ответа.</div>';
+            return;
+          }
+          const q = questions.find(q => q.id === taskId);
+          const isCorrect = (answer.value === q.correct);
+          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
+          if (isCorrect) {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-success">✅ Правильно! Переходим к следующему заданию.</div>';
+            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+          } else {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-danger">❌ Неправильно. Попробуйте ещё раз.</div>';
+          }
+        });
+      } else if (taskId === 'task3' || taskId === 'task4') {
+        const form = document.getElementById('dragForm');
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const list = document.getElementById('dragList');
+          const items = list.querySelectorAll('li');
+          const order = Array.from(items).map(li => li.textContent.trim());
+          const taskId = form.querySelector('[name="taskId"]').value;
+          const correct = correctOrders[taskId];
+          const isCorrect = (order.length === correct.length && order.every((val, idx) => val === correct[idx]));
+          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
+          const resultDiv = document.getElementById('dragResult');
+          if (isCorrect) {
+            resultDiv.innerHTML = '<div class="alert alert-success">✅ Правильный порядок! Переходим к следующему заданию.</div>';
+            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+          } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger">❌ Неправильный порядок. Попробуйте ещё раз.</div>';
+          }
+        });
+      } else if (taskId === 'task5') {
+        const form = document.getElementById('codeForm');
+        if (form) {
+          form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = form.querySelector('[name="code"]').value.trim();
+            if (!code) {
+              document.getElementById('codeResult').innerHTML = '<div class="alert alert-warning">Код не может быть пустым.</div>';
+              return;
+            }
+            await markProgress(studentId, 'practice', 'task5', false, { answer: code, checkedByTeacher: false });
+            document.getElementById('codeResult').innerHTML = '<div class="alert alert-success">Код отправлен на проверку.</div>';
+            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1500);
+          });
+        }
+      }
+    }
+
+    // Основная логика
+    onAuthStateChangedListener(async (userData) => {
+      if (!userData || userData.role !== 'student') {
+        window.location.href = 'index.html';
+        return;
+      }
+      // Навигация
+      const nav = document.getElementById('navLinks');
+      nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="student_dashboard.html"><i class="fas fa-user-graduate"></i> Кабинет</a></li>
+                       <li class="nav-item"><a class="nav-link" href="theory.html"><i class="fas fa-book-open"></i> Теория</a></li>
+                       <li class="nav-item"><a class="nav-link" href="practice.html"><i class="fas fa-tasks"></i> Практика</a></li>
+                       <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
+      document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        await logout();
+        window.location.href = 'index.html';
+      });
+
+      const studentId = userData.user.uid;
+      const progress = await getProgress(studentId);
+      const status = await getPracticeStatus(studentId);
+      renderPractice(studentId, status, progress);
+    });
+  </script>
+</body>
+</html>

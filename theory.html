@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Теория</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+  <link rel="stylesheet" href="static/style.css">
+  <style>
+    .theory-section { background: white; border-radius: 16px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .theory-section h3 { color: #0d6efd; border-bottom: 3px solid #0d6efd; padding-bottom: 10px; margin-bottom: 20px; }
+    .chapter-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: 500; margin: 4px; }
+    .chapter-done { background: #d4edda; color: #155724; }
+    .chapter-not-done { background: #f8d7da; color: #721c24; }
+    .theory-image { max-width: 80%; height: auto; border-radius: 12px; margin: 20px auto; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .tool-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .tool-table th, .tool-table td { border: 1px solid #dee2e6; padding: 10px 15px; text-align: left; }
+    .tool-table th { background: #e9ecef; }
+    .task-analysis { background: #f8faff; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #0d6efd; }
+    .explanation { background: #f1f8fe; padding: 15px 20px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #28a745; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+    <div class="container">
+      <a class="navbar-brand fw-bold text-primary" href="index.html"><i class="fas fa-code"></i> Параллельное программирование</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto" id="navLinks"></ul>
+      </div>
+    </div>
+  </nav>
+  <main class="container my-4">
+    <h2 class="mb-4"><i class="fas fa-book-open text-primary"></i> Теория: Параллельное программирование</h2>
+
+    <!-- Глава 1 -->
+    <div class="theory-section" id="chapter1">
+      <h3><i class="fas fa-compass"></i> 1. Введение: зачем это нужно?</h3>
+      <p>Вы наверняка замечали, что современные компьютеры имеют 4, 6 или 8 ядер. Ещё 15 лет назад многоядерные процессоры были редкостью, а сейчас есть даже в смартфонах. Почему?</p>
+      <p>Раньше процессоры становились быстрее за счёт увеличения <strong>тактовой частоты</strong> — числа операций в секунду. Но около 2005 года рост частоты остановился: процессоры стали слишком сильно греться. Вместо того чтобы делать одно ядро сверхбыстрым, производители стали добавлять <strong>несколько ядер</strong> на один кристалл.</p>
+      <p>Однако просто купить многоядерный компьютер недостаточно. Если программа не умеет делить работу между ядрами, она будет использовать только одно, а остальные будут простаивать. <strong>Параллельное программирование</strong> учит нас писать программы, которые могут выполнять несколько задач одновременно, используя все ядра процессора.</p>
+      <h4>Конкурентность и параллелизм — не одно и то же</h4>
+      <p>Часто эти понятия путают. Важно различать их с самого начала.</p>
+      <table class="tool-table">
+        <thead><tr><th>Термин</th><th>Описание</th><th>Пример из жизни</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Конкурентность</strong> (concurrency)</td><td>Несколько задач продвигаются <em>одновременно</em>, но физически в каждый момент выполняется только одна. Процессор быстро переключается между задачами.</td><td>Один повар варит суп и нарезает салат, переключаясь между кастрюлей и доской.</td></tr>
+          <tr><td><strong>Параллелизм</strong> (parallelism)</td><td>Несколько задач физически исполняются <strong>в один и тот же момент</strong> на разных ядрах.</td><td>Два повара работают одновременно: один варит суп, другой режет салат.</td></tr>
+        </tbody>
+      </table>
+      <p>В Python потоки (<code>threading</code>) дают <strong>конкурентность</strong>, но не всегда параллелизм из‑за GIL. Процессы (<code>multiprocessing</code>) дают настоящий <strong>параллелизм</strong>.</p>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter1">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 2 -->
+    <div class="theory-section" id="chapter2">
+      <h3><i class="fas fa-code-branch"></i> 2. Процессы и потоки — в чём разница?</h3>
+      <img src="static/images/image1.png" alt="Сравнение threading и multiprocessing" class="theory-image" onerror="this.style.display='none'">
+      <blockquote class="blockquote p-3 bg-light rounded"><p>💡 Аналогия: Процесс — это команда разработчиков, работающая над проектом. Потоки — это отдельные участники, которые сидят за одним столом (общая память) и могут передавать друг другу бумажки. А разные процессы — это разные команды, работающие в разных комнатах (изолированная память).</p></blockquote>
+      <ul><li><strong>Процесс</strong> — запущенная программа со своей собственной памятью. Процессы изолированы друг от друга. В Python каждому процессу выделен свой интерпретатор.</li><li><strong>Поток</strong> (нить) — «лёгкий» процесс, который работает внутри одного процесса. Потоки одного процесса разделяют общую память.</li></ul>
+      <p><strong>Пример процесса на Python:</strong></p>
+      <pre><code class="python">from multiprocessing import Process
+def print_word(word):
+    print('hello,', word)
+if __name__ == '__main__':
+    p1 = Process(target=print_word, args=('bob',), daemon=True)
+    p2 = Process(target=print_word, args=('alice',), daemon=True)
+    p1.start(); p2.start(); p1.join(); p2.join()
+    print("Оба процесса отработали")</code></pre>
+      <div class="explanation"><p><strong>Объяснение:</strong> процессы имеют собственную память, работают на разных ядрах. <code>daemon=True</code> позволяет не ждать их завершения при выходе из главного процесса, но в учебных целях мы используем <code>join()</code>.</p></div>
+      <p><strong>Пример потока на Python:</strong></p>
+      <pre><code class="python">import threading
+def greet(name):
+    print('hello:', name)
+if __name__ == '__main__':
+    t1 = threading.Thread(target=greet, args=('bob',), daemon=True)
+    t2 = threading.Thread(target=greet, args=('alice',), daemon=True)
+    t1.start(); t2.start(); t1.join(); t2.join()</code></pre>
+      <div class="explanation"><p><strong>Объяснение:</strong> потоки разделяют память, легче процессов, но из-за GIL не дают выигрыша в вычислениях. <code>join()</code> гарантирует, что главный поток дождётся их завершения.</p></div>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter2">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 3 -->
+    <div class="theory-section" id="chapter3">
+      <h3><i class="fas fa-lock"></i> 3. Особенность Python: GIL (Global Interpreter Lock)</h3>
+      <p>В Python из-за механизма GIL <strong>потоки не могут выполняться параллельно на разных ядрах</strong>, если они выполняют вычислительные задачи. GIL — это «ключ», который одновременно может быть только у одного потока. Поэтому для ускорения вычислений потоки в Python бесполезны.</p>
+      <blockquote class="blockquote p-3 bg-light rounded"><p>🚗 Аналогия: GIL — это однополосный мост между двумя берегами (ядрами). Машины (потоки) могут ехать по нему только по одной. Но если машина останавливается заправиться (I/O), она съезжает с моста, и другая может проехать. Для вычислительных задач машины никогда не останавливаются, поэтому мост всегда занят одной — толку от второй полосы (ядра) нет.</p></blockquote>
+      <p><strong>Когда же потоки полезны?</strong></p>
+      <ul><li>Когда программа много ждёт: читает файлы, скачивает данные из интернета, ждёт нажатия клавиш. В таких случаях GIL отпускается, и потоки работают эффективно.</li><li>Для вычислительных задач (сложные циклы, обработка больших массивов) нужно использовать <strong>процессы</strong> (<code>multiprocessing</code>). У каждого процесса свой собственный GIL, поэтому они могут работать на разных ядрах одновременно.</li></ul>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter3">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 4 -->
+    <div class="theory-section" id="chapter4">
+      <h3><i class="fas fa-toolbox"></i> 4. Инструменты для параллельного программирования в Python</h3>
+      <h4>Сводная шпаргалка «Когда что использовать»</h4>
+      <table class="tool-table">
+        <thead><tr><th>Задача</th><th>Инструмент</th><th>Почему</th></tr></thead>
+        <tbody>
+          <tr><td>Скачать 100 сайтов</td><td><code>threading</code> / <code>asyncio</code></td><td>Много ожидания сети, GIL отпускается.</td></tr>
+          <tr><td>Обработать 1 000 000 чисел</td><td><code>multiprocessing</code></td><td>Требуются честные вычисления на всех ядрах.</td></tr>
+          <tr><td>Веб-сервер с 10 000 соединений</td><td><code>asyncio</code></td><td>Очень легковесное переключение без накладных расходов потоков.</td></tr>
+          <tr><td>Параллельный обсчёт матриц</td><td><code>multiprocessing</code> или <code>numpy</code></td><td>Нужен параллелизм вычислений.</td></tr>
+        </tbody>
+      </table>
+      <h4>Модуль threading</h4>
+      <pre><code class="python">import threading, time
+def worker(name, delay):
+    print(f"Поток {name}: начал работу")
+    time.sleep(delay)
+    print(f"Поток {name}: завершил работу через {delay} секунд")
+t1 = threading.Thread(target=worker, args=("Алиса", 2))
+t2 = threading.Thread(target=worker, args=("Боб", 1))
+t1.start(); t2.start(); t1.join(); t2.join()
+print("Все потоки завершены")</code></pre>
+      <h4>Библиотека asyncio</h4>
+      <pre><code class="python">import asyncio
+async def worker(name, delay):
+    print(f"Задача {name}: начала работу")
+    await asyncio.sleep(delay)
+    print(f"Задача {name}: завершилась через {delay} секунд")
+async def main():
+    task1 = asyncio.create_task(worker("Алиса", 2))
+    task2 = asyncio.create_task(worker("Боб", 1))
+    await task1; await task2
+asyncio.run(main())</code></pre>
+      <h4>Модуль multiprocessing</h4>
+      <pre><code class="python">import multiprocessing, time
+def worker(name, delay):
+    print(f"Процесс {name}: начал работу")
+    time.sleep(delay)
+    print(f"Процесс {name}: завершил работу через {delay} секунд")
+if __name__ == "__main__":
+    p1 = multiprocessing.Process(target=worker, args=("Алиса", 2))
+    p2 = multiprocessing.Process(target=worker, args=("Боб", 1))
+    p1.start(); p2.start(); p1.join(); p2.join()
+    print("Все процессы завершены")</code></pre>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter4">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 5 -->
+    <div class="theory-section" id="chapter5">
+      <h3><i class="fas fa-handshake"></i> 5. Синхронизация: как избежать ошибок</h3>
+      <p>Когда несколько потоков или процессов работают с общими данными, могут возникнуть:</p>
+      <ul><li><strong>Гонка данных (race condition)</strong> — результат зависит от порядка операций.</li><li><strong>Дедлок (deadlock)</strong> — два потока ждут друг друга.</li><li><strong>Голодание (starvation)</strong> — один поток не получает доступа к ресурсу.</li></ul>
+      <p>Для борьбы с ними используются <strong>мьютексы (Lock)</strong>, <strong>семафоры (Semaphore)</strong>, <strong>очереди (Queue)</strong> и разделяемая память (<code>Value</code>, <code>Array</code>).</p>
+      <h4>1️⃣ Мьютекс (Lock) — защита от гонок данных</h4>
+      <pre><code class="python">import threading
+counter = 0
+lock = threading.Lock()
+def increment_with_lock():
+    global counter
+    for _ in range(100_000):
+        with lock:
+            counter += 1</code></pre>
+      <h4>2️⃣ Семафор — ограничение числа одновременных доступов</h4>
+      <pre><code class="python">semaphore = threading.Semaphore(2)
+def print_document(doc_name):
+    semaphore.acquire()
+    print(f">>> {doc_name}: печатаю...")
+    time.sleep(2)
+    print(f"<<< {doc_name}: напечатал")
+    semaphore.release()</code></pre>
+      <h4>3️⃣ Очередь (Queue) — безопасный обмен данными</h4>
+      <pre><code class="python">import queue
+q = queue.Queue()
+def producer():
+    for i in range(5):
+        q.put(i)
+def consumer():
+    while True:
+        item = q.get()
+        if item is None: break
+        print(f"Потребитель: получил {item} -> квадрат = {item*item}")
+        q.task_done()</code></pre>
+      <h4>4️⃣ Value и Array — разделяемая память между процессами</h4>
+      <pre><code class="python">from multiprocessing import Process, Value
+def sum_part(data, start, end, result):
+    partial = sum(data[start:end])
+    with result.get_lock():
+        result.value += partial</code></pre>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter5">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 6 -->
+    <div class="theory-section" id="chapter6">
+      <h3><i class="fas fa-tasks"></i> 6. Разбор практических задач (1–5)</h3>
+      <div class="task-analysis"><h5>1. Параллельная сортировка слиянием</h5><pre><code class="python"># (код из вашего theory_fragment.html)</code></pre><div class="explanation">...</div></div>
+      <div class="task-analysis"><h5>2. Вычисление числа π методом Монте-Карло</h5><pre><code class="python"># (код)</code></pre><div class="explanation">...</div></div>
+      <div class="task-analysis"><h5>3. Площадь круга методом Монте-Карло</h5><pre><code class="python"># (код)</code></pre><div class="explanation">...</div></div>
+      <div class="task-analysis"><h5>4. Параллельная проверка списка паролей</h5><pre><code class="python"># (код)</code></pre><div class="explanation">...</div></div>
+      <div class="task-analysis"><h5>5. Задача №24: обработка текстового файла построчно</h5><pre><code class="python"># (код)</code></pre><div class="explanation">...</div></div>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter6">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 7 -->
+    <div class="theory-section" id="chapter7">
+      <h3>7. Разбор практических задач (6–10)</h3>
+      <div class="task-analysis"><h5>6. Задача №25: поиск чисел с заданным количеством делителей</h5><pre><code class="python"># (код)</code></pre></div>
+      <div class="task-analysis"><h5>7. Параллельное решето Эратосфена</h5><pre><code class="python"># (код)</code></pre></div>
+      <div class="task-analysis"><h5>8. Параллельное умножение матриц (потоки)</h5><pre><code class="python"># (код)</code></pre></div>
+      <div class="task-analysis"><h5>9. Числа Фибоначчи: рекурсия и оптимизация</h5><pre><code class="python"># (код)</code></pre></div>
+      <div class="task-analysis"><h5>10. Параллельная внешняя сортировка (файл → файл)</h5><pre><code class="python"># (код)</code></pre></div>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter7">Отметить как изученное</button>
+    </div>
+
+    <!-- Глава 8, 9, 10 – можно добавить, но для краткости пропустим, вы вставите свой текст -->
+    <!-- Добавьте свои главы 8,9,10 по аналогии -->
+
+    <!-- Глава 8 (пример) -->
+    <div class="theory-section" id="chapter8">
+      <h3>8. Дополнительные материалы</h3>
+      <p>Здесь может быть ваш текст...</p>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter8">Отметить как изученное</button>
+    </div>
+    <div class="theory-section" id="chapter9">
+      <h3>9. Заключение</h3>
+      <p>...</p>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter9">Отметить как изученное</button>
+    </div>
+    <div class="theory-section" id="chapter10">
+      <h3>10. Итоговый тест</h3>
+      <p>...</p>
+      <button class="btn btn-sm btn-outline-success mark-theory" data-chapter="chapter10">Отметить как изученное</button>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module">
+    import { onAuthStateChangedListener, logout } from './static/js/auth.js';
+    import { markProgress, getProgress } from './static/js/db.js';
+
+    onAuthStateChangedListener(async (userData) => {
+      if (!userData) {
+        // Свободный доступ – скрываем кнопки
+        document.querySelectorAll('.mark-theory').forEach(b => b.style.display = 'none');
+        // Навигация
+        document.getElementById('navLinks').innerHTML = `<li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-home"></i> Главная</a></li>
+                                                         <li class="nav-item"><a class="nav-link" href="support.html"><i class="fas fa-headset"></i> Поддержка</a></li>`;
+        return;
+      }
+      const nav = document.getElementById('navLinks');
+      if (userData.role === 'student') {
+        nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="student_dashboard.html"><i class="fas fa-user-graduate"></i> Кабинет</a></li>
+                         <li class="nav-item"><a class="nav-link" href="theory.html"><i class="fas fa-book-open"></i> Теория</a></li>
+                         <li class="nav-item"><a class="nav-link" href="practice.html"><i class="fas fa-tasks"></i> Практика</a></li>
+                         <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+          e.preventDefault();
+          await logout();
+          window.location.href = 'index.html';
+        });
+
+        // Загружаем прогресс
+        const progress = await getProgress(userData.user.uid);
+        document.querySelectorAll('.mark-theory').forEach(btn => {
+          const chapter = btn.dataset.chapter;
+          const key = `theory_${chapter}`;
+          if (progress[key] && progress[key].completed) {
+            btn.textContent = '✅ Изучено';
+            btn.disabled = true;
+            btn.classList.remove('btn-outline-success');
+            btn.classList.add('btn-success');
+          }
+          btn.addEventListener('click', async () => {
+            await markProgress(userData.user.uid, 'theory', chapter, true);
+            btn.textContent = '✅ Изучено';
+            btn.disabled = true;
+          });
+        });
+      } else {
+        // Педагог – скрываем кнопки
+        document.querySelectorAll('.mark-theory').forEach(b => b.style.display = 'none');
+        nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="teacher_dashboard.html"><i class="fas fa-chalkboard"></i> Кабинет</a></li>
+                         <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
+        document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+          e.preventDefault();
+          await logout();
+          window.location.href = 'index.html';
+        });
+      }
+    });
+  </script>
+</body>
+</html>
