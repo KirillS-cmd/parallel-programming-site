@@ -31,7 +31,6 @@ export async function getClass(classId) {
 
 // ------------------ УЧЕНИКИ ------------------
 export async function addStudent(teacherId, classId, fullName) {
-  // Проверяем, есть ли уже ученик с таким именем у этого учителя
   const q = query(collection(db, 'users'), where('teacherId', '==', teacherId), where('name', '==', fullName));
   const snap = await getDocs(q);
   let studentId;
@@ -39,17 +38,14 @@ export async function addStudent(teacherId, classId, fullName) {
   if (!snap.empty) {
     const existingUser = snap.docs[0];
     studentId = existingUser.id;
-    // Проверим, не состоит ли в этом классе
     const classCheck = query(collection(db, 'studentClasses'), where('studentId', '==', studentId), where('classId', '==', classId));
     const classSnap = await getDocs(classCheck);
     if (!classSnap.empty) {
       return { success: false, error: 'Ученик уже в этом классе' };
     }
-    // Генерируем новые логин/пароль для этого класса
     login = generateLogin(fullName);
     password = generatePassword(8);
   } else {
-    // Создаём нового пользователя
     login = generateLogin(fullName);
     password = generatePassword(8);
     const email = `${login}@temp.local`;
@@ -71,7 +67,6 @@ export async function addStudent(teacherId, classId, fullName) {
       return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
     }
   }
-  // Добавляем связь в studentClasses
   await addDoc(collection(db, 'studentClasses'), {
     studentId,
     classId,
@@ -92,7 +87,6 @@ export async function getStudentsWithProgress(classId) {
     const userDoc = await getDoc(doc(db, 'users', studentId));
     if (!userDoc.exists()) continue;
     const userData = userDoc.data();
-    // Получаем прогресс
     const progressQ = query(collection(db, 'progress'), where('studentId', '==', studentId));
     const progressSnap = await getDocs(progressQ);
     const progressMap = {};
@@ -100,13 +94,11 @@ export async function getStudentsWithProgress(classId) {
       const pData = p.data();
       progressMap[`${pData.section}_${pData.itemId}`] = pData;
     });
-    // Считаем завершённые практики (5 заданий)
     let practiceDone = 0;
     for (let i = 1; i <= 5; i++) {
       if (progressMap[`practice_task${i}`]?.completed) practiceDone++;
     }
     const practicePercent = Math.round((practiceDone / 5) * 100);
-    // Проверка кода задания 5
     const codeProgress = progressMap['practice_task5'];
     const codeExists = codeProgress && codeProgress.answer && codeProgress.answer.length > 0;
     students.push({
@@ -162,7 +154,7 @@ export async function getProgress(studentId) {
   return result;
 }
 
-// ------------------ ПОЛУЧИТЬ КОД УЧЕНИКА (для педагога) ------------------
+// ------------------ КОД УЧЕНИКА ------------------
 export async function getStudentCode(studentId) {
   const q = query(collection(db, 'progress'), where('studentId', '==', studentId), where('section', '==', 'practice'), where('itemId', '==', 'task5'));
   const snap = await getDocs(q);
@@ -179,7 +171,7 @@ export async function markCodeChecked(studentId) {
   }
 }
 
-// ------------------ ПОЛЬЗОВАТЕЛЬ (для получения имени) ------------------
+// ------------------ ПОЛЬЗОВАТЕЛЬ ------------------
 export async function getUser(userId) {
   const docSnap = await getDoc(doc(db, 'users', userId));
   if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };

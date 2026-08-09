@@ -15,7 +15,7 @@ export async function loginTeacher(email, password) {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (!userDoc.exists()) {
       await signOut(auth);
-      return { success: false, error: 'Пользователь не найден в базе данных. Обратитесь к администратору.' };
+      return { success: false, error: 'Пользователь не найден в базе данных.' };
     }
     const userData = userDoc.data();
     if (userData.role === 'teacher') {
@@ -33,11 +33,8 @@ export async function loginTeacher(email, password) {
 // ------------------ Регистрация педагога ------------------
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
-    // 1. Создаём пользователя в Firebase Auth
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCred.user.uid;
-    
-    // 2. Сохраняем данные в Firestore
     await setDoc(doc(db, 'users', uid), {
       email: email,
       role: 'teacher',
@@ -49,7 +46,6 @@ export async function registerTeacher(email, password, name, city, school, phone
       teacherId: null,
       createdAt: new Date().toISOString()
     });
-    
     console.log('Регистрация успешна, пользователь создан:', uid);
     return { success: true };
   } catch (error) {
@@ -58,10 +54,9 @@ export async function registerTeacher(email, password, name, city, school, phone
   }
 }
 
-// ------------------ Вход ученика (по логину/паролю) ------------------
+// ------------------ Вход ученика ------------------
 export async function loginStudent(login, password) {
   try {
-    // Ищем запись studentClasses с таким логином
     const q = query(collection(db, 'studentClasses'), where('login', '==', login));
     const snapshot = await getDocs(q);
     if (snapshot.empty) {
@@ -77,7 +72,6 @@ export async function loginStudent(login, password) {
       return { success: false, error: 'Учётная запись ученика не найдена' };
     }
     const email = userDoc.data().email;
-    // Входим через Firebase Auth
     await signInWithEmailAndPassword(auth, email, password);
     return { success: true };
   } catch (error) {
@@ -91,7 +85,7 @@ export async function logout() {
   await signOut(auth);
 }
 
-// ------------------ Слушатель состояния авторизации ------------------
+// ------------------ Слушатель состояния ------------------
 export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -101,7 +95,6 @@ export function onAuthStateChangedListener(callback) {
           const userData = userDoc.data();
           callback({ user, role: userData.role, userData });
         } else {
-          // Если документа нет, выходим
           await signOut(auth);
           callback(null);
         }
@@ -115,7 +108,7 @@ export function onAuthStateChangedListener(callback) {
   });
 }
 
-// ------------------ Получить текущего пользователя с ролью ------------------
+// ------------------ Получить текущего пользователя ------------------
 export async function getCurrentUserWithRole() {
   const user = auth.currentUser;
   if (!user) return null;

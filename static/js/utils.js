@@ -1,4 +1,3 @@
-// Генерация случайного пароля
 export function generatePassword(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
@@ -8,7 +7,6 @@ export function generatePassword(length = 8) {
   return result;
 }
 
-// Транслитерация
 export function transliterate(text) {
   const map = {
     'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z',
@@ -27,7 +25,6 @@ export function transliterate(text) {
   return result;
 }
 
-// Генерация логина на основе ФИО
 export function generateLogin(fullName) {
   const parts = fullName.trim().split(/\s+/);
   let base;
@@ -43,7 +40,6 @@ export function generateLogin(fullName) {
   return base + rand;
 }
 
-// Получить текущую дату ISO
 export function getNowISO() {
   return new Date().toISOString();
 }
