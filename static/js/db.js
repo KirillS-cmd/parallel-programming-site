@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { generateLogin, generatePassword } from './utils.js';
 import { auth } from './firebase-config.js';
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 export async function createClass(teacherId, className) {
   const ref = await addDoc(collection(db, 'classes'), { name: className, teacherId, createdAt: new Date().toISOString() });
@@ -44,23 +44,35 @@ export async function addStudent(teacherId, classId, fullName) {
     password = generatePassword(8);
     const email = `${login}@temp.local`;
     try {
+      // Сохраняем текущие креды педагога (если есть)
+      const teacherEmail = sessionStorage.getItem('teacherEmail');
+      const teacherPassword = sessionStorage.getItem('teacherPassword');
+      
+      // Создаём ученика
       const userCred = await createUserWithEmailAndPassword(auth, email, password);
       studentId = userCred.user.uid;
       await setDoc(doc(db, 'users', studentId), {
         email, role: 'student', name: fullName, teacherId, isConfirmed: true,
         city: '', school: '', phone: ''
       });
+      
+      // Восстанавливаем сессию педагога, если она была
+      if (teacherEmail && teacherPassword) {
+        await signOut(auth);
+        await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
+      }
     } catch (err) {
       return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
     }
   }
-  // Добавляем связь в studentClasses
+  // Добавляем связь в studentClasses (если ученик уже существовал, но не в этом классе)
   await addDoc(collection(db, 'studentClasses'), {
     studentId, classId, login, password, createdAt: new Date().toISOString()
   });
   return { success: true, login, password };
 }
 
+// Остальные функции (getStudentsWithProgress, removeStudentFromClass, markProgress и т.д.) остаются без изменений.
 export async function getStudentsWithProgress(classId) {
   const q = query(collection(db, 'studentClasses'), where('classId', '==', classId));
   const snap = await getDocs(q);
@@ -71,7 +83,6 @@ export async function getStudentsWithProgress(classId) {
     const userDoc = await getDoc(doc(db, 'users', studentId));
     if (!userDoc.exists()) continue;
     const userData = userDoc.data();
-    // Получаем прогресс
     const progressQ = query(collection(db, 'progress'), where('studentId', '==', studentId));
     const progressSnap = await getDocs(progressQ);
     const progressMap = {};

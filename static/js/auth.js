@@ -16,9 +16,15 @@ export async function loginTeacher(email, password) {
       await signOut(auth);
       return { success: false, error: 'Пользователь не найден в БД' };
     }
-    return userDoc.data().role === 'teacher' 
-      ? { success: true } 
-      : (await signOut(auth), { success: false, error: 'Нет прав педагога' });
+    if (userDoc.data().role === 'teacher') {
+      // Сохраняем креды для восстановления сессии
+      sessionStorage.setItem('teacherEmail', email);
+      sessionStorage.setItem('teacherPassword', password);
+      return { success: true };
+    } else {
+      await signOut(auth);
+      return { success: false, error: 'Нет прав педагога' };
+    }
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -53,7 +59,11 @@ export async function loginStudent(login, password) {
   }
 }
 
-export async function logout() { await signOut(auth); }
+export async function logout() {
+  sessionStorage.removeItem('teacherEmail');
+  sessionStorage.removeItem('teacherPassword');
+  await signOut(auth);
+}
 
 export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
