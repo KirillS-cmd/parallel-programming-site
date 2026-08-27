@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-// ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА ВАШИ (из консоли Firebase)
 const firebaseConfig = {
   apiKey: "AIzaSyCLYbKQ4LKrnXLv_OZOfIDfBkYXv-HUPGk",
   authDomain: "parallel-programming-site.firebaseapp.com",
@@ -15,3 +14,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const API_KEY = firebaseConfig.apiKey; // экспортируем для REST

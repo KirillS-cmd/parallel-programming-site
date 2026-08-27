@@ -1,12 +1,24 @@
-import { db } from './firebase-config.js';
+import { db, API_KEY } from './firebase-config.js';
 import { 
   collection, doc, setDoc, getDoc, getDocs, query, where, 
   updateDoc, deleteDoc, addDoc 
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { generateLogin, generatePassword } from './utils.js';
-import { auth } from './firebase-config.js';
-import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { getTeacherSession, clearTeacherSession } from './auth.js';
+
+// Создание пользователя через REST API (не меняет текущую сессию)
+async function createUserViaRest(email, password) {
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, returnSecureToken: true })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error.message);
+  }
+  return data.localId; // uid
+}
 
 export async function createClass(teacherId, className) {
   const ref = await addDoc(collection(db, 'classes'), { name: className, teacherId, createdAt: new Date().toISOString() });
@@ -25,7 +37,7 @@ export async function getClass(classId) {
 }
 
 export async function addStudent(teacherId, classId, fullName) {
-  // Генерируем логин и пароль
+  // Генерируем уникальный логин и email
   let login, password, email;
   let unique = false;
   let attempts = 0;
@@ -45,36 +57,24 @@ export async function addStudent(teacherId, classId, fullName) {
   
   password = generatePassword(8);
   try {
-    // Сохраняем текущую сессию педагога (если есть)
-    const teacherSession = getTeacherSession();
-    if (!teacherSession) {
-      return { success: false, error: 'Сессия педагога не найдена. Войдите заново.' };
-    }
-
-    // Создаём ученика – это автоматически залогинит под ним
-    const userCred = await createUserWithEmailAndPassword(auth, email, password);
-    const studentId = userCred.user.uid;
+    // 1. Создаём пользователя через REST API (без входа)
+    const uid = await createUserViaRest(email, password);
     
-    // Сохраняем данные ученика в Firestore
-    await setDoc(doc(db, 'users', studentId), {
+    // 2. Сохраняем данные в Firestore
+    await setDoc(doc(db, 'users', uid), {
       email, role: 'student', name: fullName, teacherId, isConfirmed: true,
       city: '', school: '', phone: ''
     });
     await addDoc(collection(db, 'studentClasses'), {
-      studentId, classId, login, password, createdAt: new Date().toISOString()
+      studentId: uid, classId, login, password, createdAt: new Date().toISOString()
     });
-
-    // Теперь выходим из ученика и заново входим как педагог
-    await signOut(auth);
-    // Восстанавливаем сессию педагога
-    await signInWithEmailAndPassword(auth, teacherSession.email, teacherSession.password);
-    
     return { success: true, login, password };
   } catch (err) {
-    return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
+    return { success: false, error: 'Ошибка создания ученика: ' + err.message };
   }
 }
 
+// Остальные функции (getStudentsWithProgress, removeStudentFromClass, markProgress и т.д.) без изменений.
 export async function getStudentsWithProgress(classId) {
   const q = query(collection(db, 'studentClasses'), where('classId', '==', classId));
   const snap = await getDocs(q);
