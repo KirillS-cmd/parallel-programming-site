@@ -19,9 +19,7 @@ export function transliterate(text) {
     'Ъ':'','Ы':'Y','Ь':'','Э':'E','Ю':'Yu','Я':'Ya'
   };
   let result = '';
-  for (let ch of text) {
-    result += map[ch] || ch;
-  }
+  for (let ch of text) result += map[ch] || ch;
   return result;
 }
 
@@ -38,8 +36,4 @@ export function generateLogin(fullName) {
   if (base.length < 2) base = 'user';
   const rand = Math.floor(100 + Math.random() * 900);
   return base + rand;
-}
-
-export function getNowISO() {
-  return new Date().toISOString();
 }
