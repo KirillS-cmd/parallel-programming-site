@@ -5,7 +5,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { generateLogin, generatePassword } from './utils.js';
 import { auth } from './firebase-config.js';
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { getTeacherSession, clearTeacherSession } from './auth.js';
 
 export async function createClass(teacherId, className) {
   const ref = await addDoc(collection(db, 'classes'), { name: className, teacherId, createdAt: new Date().toISOString() });
@@ -24,7 +25,7 @@ export async function getClass(classId) {
 }
 
 export async function addStudent(teacherId, classId, fullName) {
-  // Генерируем уникальный логин (с проверкой на существование email)
+  // Генерируем логин и пароль
   let login, password, email;
   let unique = false;
   let attempts = 0;
@@ -44,11 +45,17 @@ export async function addStudent(teacherId, classId, fullName) {
   
   password = generatePassword(8);
   try {
-    // Создаём пользователя в Firebase Authentication (без входа под ним)
+    // Сохраняем текущую сессию педагога (если есть)
+    const teacherSession = getTeacherSession();
+    if (!teacherSession) {
+      return { success: false, error: 'Сессия педагога не найдена. Войдите заново.' };
+    }
+
+    // Создаём ученика – это автоматически залогинит под ним
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     const studentId = userCred.user.uid;
     
-    // Сохраняем данные в Firestore
+    // Сохраняем данные ученика в Firestore
     await setDoc(doc(db, 'users', studentId), {
       email, role: 'student', name: fullName, teacherId, isConfirmed: true,
       city: '', school: '', phone: ''
@@ -56,6 +63,12 @@ export async function addStudent(teacherId, classId, fullName) {
     await addDoc(collection(db, 'studentClasses'), {
       studentId, classId, login, password, createdAt: new Date().toISOString()
     });
+
+    // Теперь выходим из ученика и заново входим как педагог
+    await signOut(auth);
+    // Восстанавливаем сессию педагога
+    await signInWithEmailAndPassword(auth, teacherSession.email, teacherSession.password);
+    
     return { success: true, login, password };
   } catch (err) {
     return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
