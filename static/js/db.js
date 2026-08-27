@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 import { generateLogin, generatePassword } from './utils.js';
 import { auth } from './firebase-config.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
 export async function createClass(teacherId, className) {
   const ref = await addDoc(collection(db, 'classes'), { name: className, teacherId, createdAt: new Date().toISOString() });
@@ -24,55 +24,44 @@ export async function getClass(classId) {
 }
 
 export async function addStudent(teacherId, classId, fullName) {
-  // Проверяем, есть ли уже ученик с таким именем у этого учителя
-  const q = query(collection(db, 'users'), where('teacherId', '==', teacherId), where('name', '==', fullName));
-  const snap = await getDocs(q);
-  let studentId, login, password;
-  if (!snap.empty) {
-    // Ученик уже существует – проверяем, в этом ли он классе
-    const existing = snap.docs[0];
-    studentId = existing.id;
-    const check = query(collection(db, 'studentClasses'), where('studentId', '==', studentId), where('classId', '==', classId));
-    const checkSnap = await getDocs(check);
-    if (!checkSnap.empty) return { success: false, error: 'Ученик уже в этом классе' };
-    // Если не в этом классе – генерируем новые логин/пароль
-    login = generateLogin(fullName);
-    password = generatePassword(8);
-  } else {
-    // Создаём нового пользователя Firebase
-    login = generateLogin(fullName);
-    password = generatePassword(8);
-    const email = `${login}@temp.local`;
-    try {
-      // Сохраняем текущие креды педагога (если есть)
-      const teacherEmail = sessionStorage.getItem('teacherEmail');
-      const teacherPassword = sessionStorage.getItem('teacherPassword');
-      
-      // Создаём ученика
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      studentId = userCred.user.uid;
-      await setDoc(doc(db, 'users', studentId), {
-        email, role: 'student', name: fullName, teacherId, isConfirmed: true,
-        city: '', school: '', phone: ''
-      });
-      
-      // Восстанавливаем сессию педагога, если она была
-      if (teacherEmail && teacherPassword) {
-        await signOut(auth);
-        await signInWithEmailAndPassword(auth, teacherEmail, teacherPassword);
-      }
-    } catch (err) {
-      return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
+  // Генерируем уникальный логин (с проверкой на существование email)
+  let login, password, email;
+  let unique = false;
+  let attempts = 0;
+  while (!unique && attempts < 20) {
+    login = generateLogin(fullName) + (attempts > 0 ? attempts : '');
+    email = `${login}@temp.local`;
+    const q = query(collection(db, 'users'), where('email', '==', email));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      unique = true;
     }
+    attempts++;
   }
-  // Добавляем связь в studentClasses (если ученик уже существовал, но не в этом классе)
-  await addDoc(collection(db, 'studentClasses'), {
-    studentId, classId, login, password, createdAt: new Date().toISOString()
-  });
-  return { success: true, login, password };
+  if (!unique) {
+    return { success: false, error: 'Не удалось сгенерировать уникальный логин' };
+  }
+  
+  password = generatePassword(8);
+  try {
+    // Создаём пользователя в Firebase Authentication (без входа под ним)
+    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+    const studentId = userCred.user.uid;
+    
+    // Сохраняем данные в Firestore
+    await setDoc(doc(db, 'users', studentId), {
+      email, role: 'student', name: fullName, teacherId, isConfirmed: true,
+      city: '', school: '', phone: ''
+    });
+    await addDoc(collection(db, 'studentClasses'), {
+      studentId, classId, login, password, createdAt: new Date().toISOString()
+    });
+    return { success: true, login, password };
+  } catch (err) {
+    return { success: false, error: 'Ошибка создания пользователя: ' + err.message };
+  }
 }
 
-// Остальные функции (getStudentsWithProgress, removeStudentFromClass, markProgress и т.д.) остаются без изменений.
 export async function getStudentsWithProgress(classId) {
   const q = query(collection(db, 'studentClasses'), where('classId', '==', classId));
   const snap = await getDocs(q);

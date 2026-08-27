@@ -17,9 +17,6 @@ export async function loginTeacher(email, password) {
       return { success: false, error: 'Пользователь не найден в БД' };
     }
     if (userDoc.data().role === 'teacher') {
-      // Сохраняем креды для восстановления сессии
-      sessionStorage.setItem('teacherEmail', email);
-      sessionStorage.setItem('teacherPassword', password);
       return { success: true };
     } else {
       await signOut(auth);
@@ -60,8 +57,6 @@ export async function loginStudent(login, password) {
 }
 
 export async function logout() {
-  sessionStorage.removeItem('teacherEmail');
-  sessionStorage.removeItem('teacherPassword');
   await signOut(auth);
 }
 
@@ -69,8 +64,14 @@ export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const docSnap = await getDoc(doc(db, 'users', user.uid));
-      if (docSnap.exists()) callback({ user, role: docSnap.data().role, userData: docSnap.data() });
-      else { await signOut(auth); callback(null); }
-    } else callback(null);
+      if (docSnap.exists()) {
+        callback({ user, role: docSnap.data().role, userData: docSnap.data() });
+      } else {
+        await signOut(auth);
+        callback(null);
+      }
+    } else {
+      callback(null);
+    }
   });
 }
