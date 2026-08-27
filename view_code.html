@@ -56,7 +56,6 @@
         window.location.href = 'index.html';
         return;
       }
-      // Навигация
       const nav = document.getElementById('navLinks');
       nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="teacher_dashboard.html"><i class="fas fa-chalkboard"></i> Кабинет</a></li>
                        <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
@@ -66,7 +65,6 @@
         window.location.href = 'index.html';
       });
 
-      // Получаем данные
       const codeData = await getStudentCode(studentId);
       if (!codeData) {
         document.getElementById('codeContent').textContent = 'Код не найден';

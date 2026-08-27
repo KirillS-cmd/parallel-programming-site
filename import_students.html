@@ -41,7 +41,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const classId = urlParams.get('classId');
     if (!classId) {
-      alert('Ошибка');
+      alert('Ошибка: не указан класс');
       window.location.href = 'teacher_dashboard.html';
     }
     document.getElementById('backLink').href = `class_detail.html?id=${classId}`;

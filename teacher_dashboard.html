@@ -47,7 +47,6 @@
         window.location.href = 'index.html';
         return;
       }
-      // Навигация
       const nav = document.getElementById('navLinks');
       nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="teacher_dashboard.html"><i class="fas fa-chalkboard"></i> Кабинет</a></li>
                        <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Выйти</a></li>`;
@@ -57,7 +56,6 @@
         window.location.href = 'index.html';
       });
 
-      // Загружаем классы
       const teacherId = userData.user.uid;
       const classes = await getClasses(teacherId);
       const list = document.getElementById('classList');
@@ -70,7 +68,7 @@
             <span class="badge bg-primary rounded-pill">0 учеников</span>
           </a>
         `).join('');
-        // (количество учеников можно обновить отдельно, но для простоты оставим 0)
+        // обновим количество учеников позже
       }
     });
   </script>
