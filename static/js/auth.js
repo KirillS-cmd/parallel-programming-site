@@ -1,10 +1,19 @@
 import { auth, db } from './firebase-config.js';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
 export async function loginTeacher(email, password) {
   try {
@@ -28,7 +37,6 @@ export async function loginTeacher(email, password) {
 
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
-    const { createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js");
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
     await setDoc(doc(db, 'users', userCred.user.uid), {
       email, role: 'teacher', name, city, school, phone,

@@ -41,12 +41,13 @@
     import { getProgress, markProgress } from './static/js/db.js';
     import { getPracticeStatus } from './static/js/practice.js';
 
-    // Данные для заданий
+    // Данные для заданий 1 и 2
     const questions = [
       { id: 'task1', question: 'Что такое GIL в Python?', options: ['A) Глобальный интерпретатор, управляющий памятью.', 'B) Механизм параллельного выполнения на разных ядрах.', 'C) Блокировка, позволяющая только одному потоку выполнять Python-код.', 'D) Ускоритель выполнения кода.'], correct: 'C' },
       { id: 'task2', question: 'Для каких задач в Python лучше всего использовать потоки (threading)?', options: ['A) Для вычислительных задач.', 'B) Для задач ввода-вывода (сеть, файлы).', 'C) Для умножения матриц.', 'D) Для любых задач.'], correct: 'B' }
     ];
 
+    // Правильные порядки для заданий 3 и 4
     const correctOrders = {
       task3: [
         'with open("text.txt", "r", encoding="utf-8") as f:',
@@ -109,7 +110,7 @@
       ]
     };
 
-    // Функция перемешивания массива
+    // Перемешивание массива
     function shuffle(arr) {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {
@@ -118,6 +119,9 @@
       }
       return a;
     }
+
+    // Глобальная переменная для экземпляра Sortable
+    let sortableInstance = null;
 
     // Рендеринг текущего задания
     function renderPractice(studentId, status, progressMap) {
@@ -149,7 +153,6 @@
         </div>
       `;
 
-      // Генерируем содержимое в зависимости от taskId
       if (taskId === 'task1' || taskId === 'task2') {
         const q = questions.find(q => q.id === taskId);
         html += `
@@ -171,6 +174,27 @@
             <div id="questionResult" class="mt-2"></div>
           </div>
         `;
+        container.innerHTML = html;
+        // Обработчик для формы вопроса
+        document.getElementById('questionForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const form = e.target;
+          const taskId = form.querySelector('[name="taskId"]').value;
+          const answer = form.querySelector('[name="answer"]:checked');
+          if (!answer) {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-warning">Выберите вариант ответа.</div>';
+            return;
+          }
+          const q = questions.find(q => q.id === taskId);
+          const isCorrect = (answer.value === q.correct);
+          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
+          if (isCorrect) {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-success">✅ Правильно! Переходим к следующему заданию.</div>';
+            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+          } else {
+            document.getElementById('questionResult').innerHTML = '<div class="alert alert-danger">❌ Неправильно. Попробуйте ещё раз.</div>';
+          }
+        });
       } else if (taskId === 'task3' || taskId === 'task4') {
         const lines = shuffle(correctOrders[taskId]);
         html += `
@@ -182,19 +206,46 @@
             </ul>
             <form id="dragForm">
               <input type="hidden" name="taskId" value="${taskId}">
-              <div id="orderInputs"></div>
               <button type="submit" class="btn btn-primary">Проверить порядок</button>
             </form>
             <div id="dragResult" class="mt-2"></div>
           </div>
         `;
-        // После рендеринга инициализируем Sortable
-        setTimeout(() => {
+        container.innerHTML = html;
+
+        // Уничтожаем старый экземпляр Sortable, если есть
+        if (sortableInstance) {
+          sortableInstance.destroy();
+          sortableInstance = null;
+        }
+
+        // Инициализация Sortable
+        const list = document.getElementById('dragList');
+        if (list) {
+          sortableInstance = new Sortable(list, {
+            animation: 150,
+            ghostClass: 'sortable-chosen'
+          });
+        }
+
+        // Обработчик формы
+        document.getElementById('dragForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
           const list = document.getElementById('dragList');
-          if (list) {
-            new Sortable(list, { animation: 150, ghostClass: 'sortable-chosen' });
+          const items = list.querySelectorAll('li');
+          const order = Array.from(items).map(li => li.textContent.trim());
+          const taskId = document.getElementById('dragForm').querySelector('[name="taskId"]').value;
+          const correct = correctOrders[taskId];
+          const isCorrect = (order.length === correct.length && order.every((val, idx) => val === correct[idx]));
+          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
+          const resultDiv = document.getElementById('dragResult');
+          if (isCorrect) {
+            resultDiv.innerHTML = '<div class="alert alert-success">✅ Правильный порядок! Переходим к следующему заданию.</div>';
+            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+          } else {
+            resultDiv.innerHTML = '<div class="alert alert-danger">❌ Неправильный порядок. Попробуйте ещё раз.</div>';
           }
-        }, 100);
+        });
       } else if (taskId === 'task5') {
         const codeSubmitted = progressMap[`practice_task5`]?.answer ? true : false;
         html += `
@@ -217,51 +268,8 @@
             `}
           </div>
         `;
-      }
+        container.innerHTML = html;
 
-      container.innerHTML = html;
-
-      // Привязываем события после рендеринга
-      if (taskId === 'task1' || taskId === 'task2') {
-        document.getElementById('questionForm').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const form = e.target;
-          const taskId = form.querySelector('[name="taskId"]').value;
-          const answer = form.querySelector('[name="answer"]:checked');
-          if (!answer) {
-            document.getElementById('questionResult').innerHTML = '<div class="alert alert-warning">Выберите вариант ответа.</div>';
-            return;
-          }
-          const q = questions.find(q => q.id === taskId);
-          const isCorrect = (answer.value === q.correct);
-          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
-          if (isCorrect) {
-            document.getElementById('questionResult').innerHTML = '<div class="alert alert-success">✅ Правильно! Переходим к следующему заданию.</div>';
-            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
-          } else {
-            document.getElementById('questionResult').innerHTML = '<div class="alert alert-danger">❌ Неправильно. Попробуйте ещё раз.</div>';
-          }
-        });
-      } else if (taskId === 'task3' || taskId === 'task4') {
-        const form = document.getElementById('dragForm');
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const list = document.getElementById('dragList');
-          const items = list.querySelectorAll('li');
-          const order = Array.from(items).map(li => li.textContent.trim());
-          const taskId = form.querySelector('[name="taskId"]').value;
-          const correct = correctOrders[taskId];
-          const isCorrect = (order.length === correct.length && order.every((val, idx) => val === correct[idx]));
-          await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
-          const resultDiv = document.getElementById('dragResult');
-          if (isCorrect) {
-            resultDiv.innerHTML = '<div class="alert alert-success">✅ Правильный порядок! Переходим к следующему заданию.</div>';
-            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
-          } else {
-            resultDiv.innerHTML = '<div class="alert alert-danger">❌ Неправильный порядок. Попробуйте ещё раз.</div>';
-          }
-        });
-      } else if (taskId === 'task5') {
         const form = document.getElementById('codeForm');
         if (form) {
           form.addEventListener('submit', async (e) => {
