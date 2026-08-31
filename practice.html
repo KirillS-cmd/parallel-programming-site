@@ -14,7 +14,9 @@
     .code-textarea { width: 100%; min-height: 200px; font-family: 'Courier New', monospace; font-size: 0.95rem; padding: 10px; border: 2px solid #ced4da; border-radius: 8px; background: #f8f9fa; }
     .task-card { background: white; border-radius: 16px; padding: 20px 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid #0d6efd; }
     .task-card h4 { color: #0d6efd; }
-    .task-condition { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107; }
+    .task-condition { background: #fff3cd; padding: 15px 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107; }
+    .task-condition p { margin: 0; font-size: 1rem; }
+    .task-condition code { background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -46,10 +48,10 @@
       { id: 'task2', question: 'Для каких задач в Python лучше всего использовать потоки (threading)?', options: ['A) Для вычислительных задач.', 'B) Для задач ввода-вывода (сеть, файлы).', 'C) Для умножения матриц.', 'D) Для любых задач.'], correct: 'B' }
     ];
 
-    // ===== УСЛОВИЯ ЗАДАНИЙ 3 и 4 (перетаскивание) =====
+    // ===== УСЛОВИЯ ЗАДАНИЙ 3 и 4 (используем HTML-теги) =====
     const taskDescriptions = {
-      task3: '📌 Задача 3. Дан текстовый файл text.txt. Напишите программу, которая подсчитывает общее количество строк в этом файле. Для ускорения используйте потоки – каждый поток обрабатывает свою часть файла, а затем результаты суммируются. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.',
-      task4: '📌 Задача 4. Есть список файлов с указанием их размера (время загрузки пропорционально размеру). Нужно загрузить все файлы параллельно с помощью потоков и вывести общее время загрузки. Сравните с последовательной загрузкой. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.'
+      task3: '📌 <strong>Задача 3.</strong> Дан текстовый файл <code>text.txt</code>. Напишите программу, которая подсчитывает общее количество строк в этом файле. Для ускорения используйте <strong>потоки</strong> – каждый поток обрабатывает свою часть файла, а затем результаты суммируются. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.',
+      task4: '📌 <strong>Задача 4.</strong> Есть список файлов с указанием их размера (время загрузки пропорционально размеру). Нужно загрузить все файлы <strong>параллельно</strong> с помощью потоков и вывести общее время загрузки. Сравните с последовательной загрузкой. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.'
     };
 
     // ===== ПРАВИЛЬНЫЕ ПОРЯДКИ =====
@@ -210,7 +212,6 @@
           <div class="task-card">
             <h4>Задание ${taskIndex} <span class="badge bg-warning text-dark">Перетаскивание</span></h4>
             <div class="task-condition">
-              <strong><i class="fas fa-info-circle"></i> Условие задачи:</strong>
               <p>${description}</p>
             </div>
             <p>Расставьте строки кода в правильном порядке (сверху вниз).</p>
