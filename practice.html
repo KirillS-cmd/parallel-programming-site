@@ -14,7 +14,7 @@
     .code-textarea { width: 100%; min-height: 200px; font-family: 'Courier New', monospace; font-size: 0.95rem; padding: 10px; border: 2px solid #ced4da; border-radius: 8px; background: #f8f9fa; }
     .task-card { background: white; border-radius: 16px; padding: 20px 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid #0d6efd; }
     .task-card h4 { color: #0d6efd; }
-    .task-condition { background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107; }
+    .task-condition { background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107; }
   </style>
 </head>
 <body>
@@ -30,8 +30,6 @@
   <main class="container my-4">
     <h2 class="mb-3"><i class="fas fa-tasks text-success"></i> Практика</h2>
     <p class="text-muted">Выполняйте задания по порядку. После правильного ответа автоматически перейдёте к следующему.</p>
-
-    <!-- Контейнер для динамического рендеринга заданий -->
     <div id="practiceContainer"></div>
   </main>
 
@@ -42,19 +40,19 @@
     import { getProgress, markProgress } from './static/js/db.js';
     import { getPracticeStatus } from './static/js/practice.js';
 
-    // Данные для заданий 1 и 2
+    // ===== ЗАДАНИЯ 1 и 2 (вопросы с выбором) =====
     const questions = [
       { id: 'task1', question: 'Что такое GIL в Python?', options: ['A) Глобальный интерпретатор, управляющий памятью.', 'B) Механизм параллельного выполнения на разных ядрах.', 'C) Блокировка, позволяющая только одному потоку выполнять Python-код.', 'D) Ускоритель выполнения кода.'], correct: 'C' },
       { id: 'task2', question: 'Для каких задач в Python лучше всего использовать потоки (threading)?', options: ['A) Для вычислительных задач.', 'B) Для задач ввода-вывода (сеть, файлы).', 'C) Для умножения матриц.', 'D) Для любых задач.'], correct: 'B' }
     ];
 
-    // Описания задач для заданий 3 и 4
+    // ===== УСЛОВИЯ ЗАДАНИЙ 3 и 4 (перетаскивание) =====
     const taskDescriptions = {
-      task3: 'Напишите программу, которая подсчитывает количество строк в текстовом файле "text.txt" с использованием потоков. Код должен создать несколько потоков, каждый из которых обрабатывает свою часть файла, и затем суммировать результаты. Расставьте строки кода в правильном порядке.',
-      task4: 'Реализуйте параллельную загрузку нескольких файлов с помощью потоков. Есть список файлов с указанием их размера (время загрузки пропорционально размеру). Загрузите все файлы параллельно и выведите общее время загрузки. Расставьте строки кода в правильном порядке.'
+      task3: '📌 **Задача 3.** Дан текстовый файл `text.txt`. Напишите программу, которая подсчитывает общее количество строк в этом файле. Для ускорения используйте **потоки** – каждый поток обрабатывает свою часть файла, а затем результаты суммируются. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.',
+      task4: '📌 **Задача 4.** Есть список файлов с указанием их размера (время загрузки пропорционально размеру). Нужно загрузить все файлы **параллельно** с помощью потоков и вывести общее время загрузки. Сравните с последовательной загрузкой. Расставьте строки кода в правильном порядке, чтобы получилась рабочая программа.'
     };
 
-    // Правильные порядки для заданий 3 и 4
+    // ===== ПРАВИЛЬНЫЕ ПОРЯДКИ =====
     const correctOrders = {
       task3: [
         'with open("text.txt", "r", encoding="utf-8") as f:',
@@ -117,7 +115,6 @@
       ]
     };
 
-    // Перемешивание массива
     function shuffle(arr) {
       const a = [...arr];
       for (let i = a.length - 1; i > 0; i--) {
@@ -127,10 +124,8 @@
       return a;
     }
 
-    // Глобальная переменная для экземпляра Sortable
     let sortableInstance = null;
 
-    // Рендеринг текущего задания
     function renderPractice(studentId, status, progressMap) {
       const container = document.getElementById('practiceContainer');
       const { completed, current, allDone } = status;
@@ -146,7 +141,6 @@
         return;
       }
 
-      // Определяем текущее задание
       const taskId = current;
       const taskIndex = ['task1','task2','task3','task4','task5'].indexOf(taskId) + 1;
       const totalTasks = 5;
@@ -160,6 +154,7 @@
         </div>
       `;
 
+      // ===== ЗАДАНИЯ 1 и 2 =====
       if (taskId === 'task1' || taskId === 'task2') {
         const q = questions.find(q => q.id === taskId);
         html += `
@@ -182,7 +177,6 @@
           </div>
         `;
         container.innerHTML = html;
-        // Обработчик для формы вопроса
         document.getElementById('questionForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           const form = e.target;
@@ -206,7 +200,10 @@
             document.getElementById('questionResult').innerHTML = '<div class="alert alert-danger">❌ Неправильно. Попробуйте ещё раз.</div>';
           }
         });
-      } else if (taskId === 'task3' || taskId === 'task4') {
+      }
+
+      // ===== ЗАДАНИЯ 3 и 4 (перетаскивание) =====
+      else if (taskId === 'task3' || taskId === 'task4') {
         const lines = shuffle(correctOrders[taskId]);
         const description = taskDescriptions[taskId];
         html += `
@@ -229,13 +226,10 @@
         `;
         container.innerHTML = html;
 
-        // Уничтожаем старый экземпляр Sortable, если есть
         if (sortableInstance) {
           sortableInstance.destroy();
           sortableInstance = null;
         }
-
-        // Инициализация Sortable
         const list = document.getElementById('dragList');
         if (list) {
           sortableInstance = new Sortable(list, {
@@ -244,7 +238,6 @@
           });
         }
 
-        // Обработчик формы
         document.getElementById('dragForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           const list = document.getElementById('dragList');
@@ -266,7 +259,10 @@
             resultDiv.innerHTML = '<div class="alert alert-danger">❌ Неправильный порядок. Попробуйте ещё раз.</div>';
           }
         });
-      } else if (taskId === 'task5') {
+      }
+
+      // ===== ЗАДАНИЕ 5 (код) =====
+      else if (taskId === 'task5') {
         const codeSubmitted = progressMap[`practice_task5`]?.answer ? true : false;
         html += `
           <div class="task-card">
@@ -289,7 +285,6 @@
           </div>
         `;
         container.innerHTML = html;
-
         const form = document.getElementById('codeForm');
         if (form) {
           form.addEventListener('submit', async (e) => {
@@ -311,13 +306,12 @@
       }
     }
 
-    // Основная логика
+    // ===== АВТОРИЗАЦИЯ =====
     onAuthStateChangedListener(async (userData) => {
       if (!userData || userData.role !== 'student') {
         window.location.href = 'index.html';
         return;
       }
-      // Навигация
       const nav = document.getElementById('navLinks');
       nav.innerHTML = `<li class="nav-item"><a class="nav-link" href="student_dashboard.html"><i class="fas fa-user-graduate"></i> Кабинет</a></li>
                        <li class="nav-item"><a class="nav-link" href="theory.html"><i class="fas fa-book-open"></i> Теория</a></li>
