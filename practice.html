@@ -14,6 +14,7 @@
     .code-textarea { width: 100%; min-height: 200px; font-family: 'Courier New', monospace; font-size: 0.95rem; padding: 10px; border: 2px solid #ced4da; border-radius: 8px; background: #f8f9fa; }
     .task-card { background: white; border-radius: 16px; padding: 20px 25px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid #0d6efd; }
     .task-card h4 { color: #0d6efd; }
+    .task-condition { background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ffc107; }
   </style>
 </head>
 <body>
@@ -46,6 +47,12 @@
       { id: 'task1', question: 'Что такое GIL в Python?', options: ['A) Глобальный интерпретатор, управляющий памятью.', 'B) Механизм параллельного выполнения на разных ядрах.', 'C) Блокировка, позволяющая только одному потоку выполнять Python-код.', 'D) Ускоритель выполнения кода.'], correct: 'C' },
       { id: 'task2', question: 'Для каких задач в Python лучше всего использовать потоки (threading)?', options: ['A) Для вычислительных задач.', 'B) Для задач ввода-вывода (сеть, файлы).', 'C) Для умножения матриц.', 'D) Для любых задач.'], correct: 'B' }
     ];
+
+    // Описания задач для заданий 3 и 4
+    const taskDescriptions = {
+      task3: 'Напишите программу, которая подсчитывает количество строк в текстовом файле "text.txt" с использованием потоков. Код должен создать несколько потоков, каждый из которых обрабатывает свою часть файла, и затем суммировать результаты. Расставьте строки кода в правильном порядке.',
+      task4: 'Реализуйте параллельную загрузку нескольких файлов с помощью потоков. Есть список файлов с указанием их размера (время загрузки пропорционально размеру). Загрузите все файлы параллельно и выведите общее время загрузки. Расставьте строки кода в правильном порядке.'
+    };
 
     // Правильные порядки для заданий 3 и 4
     const correctOrders = {
@@ -201,9 +208,14 @@
         });
       } else if (taskId === 'task3' || taskId === 'task4') {
         const lines = shuffle(correctOrders[taskId]);
+        const description = taskDescriptions[taskId];
         html += `
           <div class="task-card">
             <h4>Задание ${taskIndex} <span class="badge bg-warning text-dark">Перетаскивание</span></h4>
+            <div class="task-condition">
+              <strong><i class="fas fa-info-circle"></i> Условие задачи:</strong>
+              <p>${description}</p>
+            </div>
             <p>Расставьте строки кода в правильном порядке (сверху вниз).</p>
             <ul id="dragList" class="drag-list">
               ${lines.map(line => `<li>${line}</li>`).join('')}
