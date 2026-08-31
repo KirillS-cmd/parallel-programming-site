@@ -190,7 +190,6 @@
           await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
           if (isCorrect) {
             document.getElementById('questionResult').innerHTML = '<div class="alert alert-success">✅ Правильно! Переходим к следующему заданию.</div>';
-            // Перезагружаем практику через 1 секунду
             setTimeout(async () => {
               const newStatus = await getPracticeStatus(studentId);
               const newProgress = await getProgress(studentId);
