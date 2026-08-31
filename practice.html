@@ -190,7 +190,12 @@
           await markProgress(studentId, 'practice', taskId, isCorrect, { score: isCorrect ? 1 : 0 });
           if (isCorrect) {
             document.getElementById('questionResult').innerHTML = '<div class="alert alert-success">✅ Правильно! Переходим к следующему заданию.</div>';
-            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+            // Перезагружаем практику через 1 секунду
+            setTimeout(async () => {
+              const newStatus = await getPracticeStatus(studentId);
+              const newProgress = await getProgress(studentId);
+              renderPractice(studentId, newStatus, newProgress);
+            }, 1000);
           } else {
             document.getElementById('questionResult').innerHTML = '<div class="alert alert-danger">❌ Неправильно. Попробуйте ещё раз.</div>';
           }
@@ -241,7 +246,11 @@
           const resultDiv = document.getElementById('dragResult');
           if (isCorrect) {
             resultDiv.innerHTML = '<div class="alert alert-success">✅ Правильный порядок! Переходим к следующему заданию.</div>';
-            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1000);
+            setTimeout(async () => {
+              const newStatus = await getPracticeStatus(studentId);
+              const newProgress = await getProgress(studentId);
+              renderPractice(studentId, newStatus, newProgress);
+            }, 1000);
           } else {
             resultDiv.innerHTML = '<div class="alert alert-danger">❌ Неправильный порядок. Попробуйте ещё раз.</div>';
           }
@@ -281,7 +290,11 @@
             }
             await markProgress(studentId, 'practice', 'task5', false, { answer: code, checkedByTeacher: false });
             document.getElementById('codeResult').innerHTML = '<div class="alert alert-success">Код отправлен на проверку.</div>';
-            setTimeout(() => renderPractice(studentId, await getPracticeStatus(studentId), await getProgress(studentId)), 1500);
+            setTimeout(async () => {
+              const newStatus = await getPracticeStatus(studentId);
+              const newProgress = await getProgress(studentId);
+              renderPractice(studentId, newStatus, newProgress);
+            }, 1500);
           });
         }
       }
