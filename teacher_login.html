@@ -50,8 +50,9 @@
       if (result.success) {
         window.location.href = 'teacher_dashboard.html';
       } else {
-        document.getElementById('loginError').textContent = result.error;
-        document.getElementById('loginError').classList.remove('d-none');
+        const errorDiv = document.getElementById('loginError');
+        errorDiv.textContent = result.error;
+        errorDiv.classList.remove('d-none');
       }
     });
   </script>
