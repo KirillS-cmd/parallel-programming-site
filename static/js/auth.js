@@ -40,7 +40,6 @@ export async function loginTeacher(email, password) {
 
 /**
  * Регистрация педагога с записью данных в Firestore
- * Добавлено подробное логирование ошибок в консоль
  */
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
@@ -51,27 +50,54 @@ export async function registerTeacher(email, password, name, city, school, phone
     });
     return { success: true };
   } catch (error) {
-    // Детальный вывод в консоль – даёт точный код ошибки
-    console.error('Ошибка регистрации:', error.code, error.message);
+    console.error('Ошибка регистрации педагога:', error.code, error.message);
     return { success: false, error: error.message };
   }
 }
 
 /**
- * Вход ученика по логину и паролю (логин хранится в studentClasses)
+ * Вход ученика по логину и паролю (с подробным логированием)
  */
 export async function loginStudent(login, password) {
   try {
+    console.log('Попытка входа ученика с логином:', login);
+    
+    // 1. Ищем запись в studentClasses по логину
     const q = query(collection(db, 'studentClasses'), where('login', '==', login));
     const snap = await getDocs(q);
-    if (snap.empty) return { success: false, error: 'Неверный логин' };
+    
+    if (snap.empty) {
+      console.error('Логин не найден в studentClasses:', login);
+      return { success: false, error: 'Неверный логин' };
+    }
+    
+    // Берём первый документ (логин должен быть уникальным)
     const data = snap.docs[0].data();
-    if (data.password !== password) return { success: false, error: 'Неверный пароль' };
+    console.log('Найдена запись studentClass:', data);
+    
+    // 2. Проверяем пароль
+    if (data.password !== password) {
+      console.error('Пароль не совпадает для логина:', login);
+      return { success: false, error: 'Неверный пароль' };
+    }
+    
+    // 3. Получаем данные пользователя по studentId
     const userDoc = await getDoc(doc(db, 'users', data.studentId));
-    if (!userDoc.exists()) return { success: false, error: 'Ученик не найден' };
-    await signInWithEmailAndPassword(auth, userDoc.data().email, password);
+    if (!userDoc.exists()) {
+      console.error('Пользователь с studentId не найден:', data.studentId);
+      return { success: false, error: 'Ученик не найден' };
+    }
+    
+    const userData = userDoc.data();
+    console.log('Найден пользователь:', userData);
+    
+    // 4. Вход через Firebase Auth с email и паролем
+    await signInWithEmailAndPassword(auth, userData.email, password);
+    console.log('Вход ученика успешен!');
     return { success: true };
+    
   } catch (error) {
+    console.error('Ошибка входа ученика:', error.code, error.message);
     return { success: false, error: error.message };
   }
 }
