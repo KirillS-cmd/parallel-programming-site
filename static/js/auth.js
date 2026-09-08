@@ -15,6 +15,9 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
+/**
+ * Вход педагога по email и паролю
+ */
 export async function loginTeacher(email, password) {
   try {
     const userCred = await signInWithEmailAndPassword(auth, email, password);
@@ -35,6 +38,10 @@ export async function loginTeacher(email, password) {
   }
 }
 
+/**
+ * Регистрация педагога с записью данных в Firestore
+ * Добавлено подробное логирование ошибок в консоль
+ */
 export async function registerTeacher(email, password, name, city, school, phone) {
   try {
     const userCred = await createUserWithEmailAndPassword(auth, email, password);
@@ -44,10 +51,15 @@ export async function registerTeacher(email, password, name, city, school, phone
     });
     return { success: true };
   } catch (error) {
+    // Детальный вывод в консоль – даёт точный код ошибки
+    console.error('Ошибка регистрации:', error.code, error.message);
     return { success: false, error: error.message };
   }
 }
 
+/**
+ * Вход ученика по логину и паролю (логин хранится в studentClasses)
+ */
 export async function loginStudent(login, password) {
   try {
     const q = query(collection(db, 'studentClasses'), where('login', '==', login));
@@ -64,10 +76,16 @@ export async function loginStudent(login, password) {
   }
 }
 
+/**
+ * Выход из аккаунта
+ */
 export async function logout() {
   await signOut(auth);
 }
 
+/**
+ * Слушатель изменения состояния авторизации
+ */
 export function onAuthStateChangedListener(callback) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
