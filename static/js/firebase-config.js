@@ -13,7 +13,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// ЭКСПОРТЫ – БЕЗ НИХ НИЧЕГО НЕ РАБОТАЕТ
+// ЭКСПОРТЫ – без них ничего не работает
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const API_KEY = firebaseConfig.apiKey;
